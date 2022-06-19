@@ -15,17 +15,36 @@
                 {{ pageInfo.hostname }}
             </v-card-title>
             <v-card-text>
+                <v-card
+                    class="mr-1 ml-1"
+                    elevation="0"
+                    color="grey lighten-2"
+                >
+                    <div class="mr-2 ml-2 pa-2" style="font-size:0.7rem">
+                        {{ pageInfo.href }}
+                    </div>
+                    <v-card-actions>
+                        <v-spacer />
+                        <div :style="copyResult.style"> {{copyResult.text}} </div>
+                        <v-btn
+                            @click="copyUrlToClipBoard(pageInfo.href)"
+                            x-small text style="color:#616161;"
+                        >
+                            <v-icon style="font-size:1rem;">mdi-content-paste</v-icon>
+                        </v-btn>
+                    </v-card-actions>
+                </v-card>
                 <v-list dense>
                     <v-list-item>
-                        <v-list-item-content>Path:</v-list-item-content>
+                        <v-list-item-content>Path</v-list-item-content>
                         <v-list-item-content class="align-end font-weight-bold">
                             {{ pageInfo.pathname }}
                         </v-list-item-content>
                     </v-list-item>
                     <v-list-item>
-                        <v-list-item-content>Port:</v-list-item-content>
+                        <v-list-item-content>Port</v-list-item-content>
                         <v-list-item-content class="align-end font-weight-bold">
-                            {{ pageInfo.port }}
+                            {{ portParser(pageInfo.protocol, pageInfo.port) }}
                         </v-list-item-content>
                     </v-list-item>
                 </v-list>
@@ -41,45 +60,14 @@ export default {
   components: {
   },
   props: {
-    testBool: {
-        type: Boolean,
-        default: () => false,
-    },
-    testData: {
-        type: Object,
-        default: () => {},
+    pageInfo: {
+        default: () => new URL(''),
     },
   },
   computed: {},
   mounted() {
-    this.makePage();
   },
   methods: {
-    async getCurrentUrl() {
-        const queryOptions = { active: true, currentWindow: true };
-        if (!this.testBool) {
-            /* eslint-disable */
-            const tabs = await chrome.tabs.query(queryOptions);
-            if (tabs.length > 0) {
-                if (tabs[0].url !== undefined && tabs[0].url !== '') {
-                    return tabs[0].url;
-                }
-            }
-        }
-        return '';
-    },
-
-    async makePage() {
-        const url = await this.getCurrentUrl();
-        if (this.testBool) {
-            this.pageInfo = new URL(this.testData.url);
-        } else {
-            this.pageInfo = new URL(url);
-        }
-        /* eslint-disable */
-        console.log(this.pageInfo);
-    },
-
     protocolParser(protocol) {
         let protocolText = protocol;
         if (protocol === 'https:') {
@@ -91,9 +79,48 @@ export default {
         }
         return protocolText;
     },
+    portParser(protocol, port) {
+        if (port !== '') {
+            return port;
+        }
+        switch (protocol) {
+            case 'https:':
+                return '443';
+            case 'http:':
+                return '80';
+            case 'ldap:':
+                return '389';
+            case 'ldaps:':
+                return '636';
+            default:
+                return '';
+        }
+    },
+    copyUrlToClipBoard(url) {
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(url).then(() => {
+                this.copyResult.text = 'copy success!';
+                this.copyResult.style.color = 'green';
+            });
+        } else {
+            this.copyResult.text = 'copy fail';
+            this.copyResult.style.color = 'red';
+        }
+
+        setTimeout(() => {
+            this.copyResult.text = '';
+            this.copyResult.style.color = 'gray';
+        }, 1500);
+    },
   },
   data: () => ({
-    pageInfo: {},
+    copyResult: {
+        text: '',
+        style: {
+            color: 'gray',
+            'font-size': '0.5rem',
+        },
+    },
   }),
 };
 </script>

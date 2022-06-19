@@ -9,7 +9,7 @@ export default {
   },
   props: [],
   computed: {},
-  mounted () {
+  mounted() {
   },
   methods: {
   },
