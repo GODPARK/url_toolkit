@@ -42,7 +42,7 @@
     },
     "rules": {
       "indent": "off",
-      "linebreak-style": ["error", "windows"]
+      "linebreak-style": "off"
     }
   },
   "browserslist": [
