@@ -20,7 +20,10 @@
                     elevation="0"
                     color="grey lighten-2"
                 >
-                    <div class="mr-2 ml-2 pa-2" style="font-size:0.7rem">
+                    <div
+                        class="mr-2 ml-2 pa-2"
+                        style="font-size:0.7rem;overflow:auto;white-space: nowrap;"
+                    >
                         {{ pageInfo.href }}
                     </div>
                     <v-card-actions>
@@ -36,15 +39,25 @@
                 </v-card>
                 <v-list dense>
                     <v-list-item>
-                        <v-list-item-content>Path</v-list-item-content>
-                        <v-list-item-content class="align-end font-weight-bold">
-                            {{ pageInfo.pathname }}
+                        <v-list-item-content
+                        >
+                            <v-list-item-title style="color:grey">
+                                Path.
+                            </v-list-item-title>
+                            <div class="ml-3" style="overflow:auto;white-space: nowrap;">
+                                <strong>{{ pageInfo.pathname }}</strong>
+                            </div>
                         </v-list-item-content>
                     </v-list-item>
                     <v-list-item>
-                        <v-list-item-content>Port</v-list-item-content>
-                        <v-list-item-content class="align-end font-weight-bold">
-                            {{ portParser(pageInfo.protocol, pageInfo.port) }}
+                        <v-list-item-content
+                        >
+                            <v-list-item-title style="color:grey">
+                                Port.
+                            </v-list-item-title>
+                            <div class="ml-3" style="overflow:auto;white-space: nowrap;">
+                                <strong>{{ portParser(pageInfo.protocol, pageInfo.port) }}</strong>
+                            </div>
                         </v-list-item-content>
                     </v-list-item>
                 </v-list>
