@@ -11,8 +11,14 @@
                 <v-toolbar-title style="font-size:1rem;">
                     URL Encode/Decode (UTF-8/ASCII)
                 </v-toolbar-title>
+                <v-spacer />
+                <v-btn text @click="uiControl()">
+                    <v-icon>
+                        {{ uiControlbuttonText }}
+                    </v-icon>
+                </v-btn>
             </v-toolbar>
-            <v-container>
+            <v-container v-if="uiOpenStatusBool">
                 <v-row>
                     <v-col cols="12">
                         <v-text-field
@@ -58,10 +64,20 @@ export default {
   components: {
   },
   props: [],
-  computed: {},
+  computed: {
+    uiControlbuttonText() {
+        if (this.uiOpenStatusBool) {
+            return 'mdi-chevron-up';
+        }
+        return 'mdi-chevron-down';
+    },
+  },
   mounted() {
   },
   methods: {
+    uiControl() {
+        this.uiOpenStatusBool = !this.uiOpenStatusBool;
+    },
     encodeUtf8ToAscii() {
         if (this.asciiText !== '') {
             this.asciiText = '';
@@ -111,6 +127,7 @@ export default {
     utf8ErrorBool: false,
     asciiSuccessBool: false,
     asciiErrorBool: false,
+    uiOpenStatusBool: false,
   }),
 };
 </script>
