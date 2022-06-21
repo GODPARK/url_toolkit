@@ -21,7 +21,20 @@
             {{ clipBoardResult.text }}
           </div>
           <v-spacer />
-          <v-btn small @click="redirectAction()"> GO </v-btn>
+          <v-tooltip bottom>
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn
+                color="success"
+                small
+                @click="redirectAction()"
+                v-bind="attrs"
+                v-on="on"
+              >
+                GO
+              </v-btn>
+            </template>
+            <span>new tab or browser open</span>
+          </v-tooltip>
         </v-toolbar>
         <v-card
           v-if="editBool"
@@ -30,6 +43,9 @@
           outlined
           color="grey lighten-3"
         >
+          <div class="ml-3 mt-1" :style="newParamResult.style">
+            {{ newParamResult.text }}
+          </div>
           <v-container>
             <v-row>
               <v-col cols="4">
@@ -68,18 +84,36 @@
           calculate-widths
           mobile-breakpoint="500"
           class="elevation-1 mt-1"
+          :items-per-page="-1"
         >
           <template v-slot:[`item.key`]="{ item }">
             <v-chip
-              color="secondary"
+              :color="newParamColor(item)"
               small
               dark
+              @click="copyTextToClipBoard(item.key)"
             >
-              {{ item.key }}
+              <strong>
+                {{ item.key }}
+              </strong>
             </v-chip>
           </template>
+          <template v-slot:[`item.decode`]="{ item }">
+            <div
+              style="cursor: pointer;"
+              @click="copyTextToClipBoard(decodeValueInTable(item))"
+            >
+              {{ decodeValueInTable(item) }}
+            </div>
+          </template>
           <template v-slot:[`item.value`]="{ item }">
-            <div v-if="!editBool" style="width:85%"> {{ item.value }}</div>
+            <div
+              v-if="!editBool"
+              @click="copyTextToClipBoard(item.value)"
+              style="overflow:auto;white-space: nowrap;cursor: pointer;"
+            >
+              {{ item.value }}
+            </div>
             <v-text-field
               v-if="editBool"
               v-model="item.value"
@@ -88,16 +122,13 @@
               outlined
               single-line
               hide-details="true"
+              prepend-icon="mdi-content-paste"
+              @click:prepend="copyTextToClipBoard(item.value)"
               :hint="item.value"
-              style="width:85%"
+              style="width:90%"
             ></v-text-field>
           </template>
           <template v-slot:[`item.control`]="{ item }">
-            <v-btn x-small text @click="copyTextToClipBoard(item)">
-              <v-icon>
-                mdi-content-paste
-              </v-icon>
-            </v-btn>
             <v-btn x-small text v-if="editBool" @click="deleteItemInList(item)">
               <v-icon>
                 mdi-delete-outline
@@ -123,11 +154,18 @@ export default {
       default: () => false,
     },
   },
-  computed: {},
+  computed: {
+  },
   mounted() {
     this.makeParams(this.pageInfo.search);
   },
   methods: {
+    newParamColor(item) {
+      if (item.isNew) {
+        return 'error';
+      }
+      return 'secondary';
+    },
     makeParams(rawParams) {
       if (rawParams !== '') {
           const removeQuestionMark = rawParams.replace('?', '');
@@ -140,6 +178,8 @@ export default {
                 {
                   key: paramKeyValue[0],
                   value: paramKeyValue[1],
+                  isEdit: false,
+                  isNew: false,
                 },
               );
           } else if (paramKeyValue.length === 1) {
@@ -147,6 +187,8 @@ export default {
                 {
                   key: paramKeyValue[0],
                   value: '',
+                  isEdit: false,
+                  isNew: false,
                 },
               );
           }
@@ -154,14 +196,26 @@ export default {
       }
     },
 
-    copyTextToClipBoard(item) {
+    decodeValueInTable(item) {
+      try {
+        const value = decodeURIComponent(item.value);
+        if (value === item.value) {
+          return '';
+        }
+        return value;
+      } catch {
+        return '?';
+      }
+    },
+
+    copyTextToClipBoard(copyText) {
       if (navigator.clipboard) {
-            navigator.clipboard.writeText(item.value).then(() => {
-                this.clipBoardResult.text = `'${item.key}' value is copy success!`;
+            navigator.clipboard.writeText(copyText).then(() => {
+                this.clipBoardResult.text = 'copy success!';
                 this.clipBoardResult.style.color = 'green';
             });
         } else {
-            this.clipBoardResult.text = `${item.key} value is copy fail!`;
+            this.clipBoardResult.text = 'copy fail!';
             this.clipBoardResult.style.color = 'red';
         }
 
@@ -181,12 +235,33 @@ export default {
         const addValue = {
           key: '',
           value: '',
+          isEdit: false,
+          isNew: true,
         };
         addValue.key = this.newParamKey;
         if (this.newParamValue !== undefined && this.newParamValue !== null) {
           addValue.value = this.newParamValue;
         }
-        this.paramsList.push(addValue);
+        let isAdd = true;
+        this.paramsList.forEach((element) => {
+          if (element.key === addValue.key) {
+            isAdd = false;
+          }
+        });
+        if (isAdd) {
+          this.paramsList.push(addValue);
+          this.newParamKey = '';
+          this.newParamValue = '';
+          this.newParamResult.text = 'new parameters add success';
+          this.newParamResult.style.color = 'green';
+        } else {
+          this.newParamResult.text = 'key is duplicated';
+          this.newParamResult.style.color = 'red';
+        }
+        setTimeout(() => {
+            this.newParamResult.text = '';
+            this.newParamResult.style.color = 'gray';
+        }, 2500);
       }
     },
 
@@ -224,6 +299,12 @@ export default {
     editBool: false,
     newParamKey: '',
     newParamValue: '',
+    newParamResult: {
+      text: '',
+      style: {
+        color: 'green',
+      },
+    },
     clipBoardResult: {
       text: '',
       style: {
@@ -237,6 +318,12 @@ export default {
         align: 'left',
         sortable: true,
         value: 'key',
+      },
+      {
+        text: 'Decode',
+        align: 'left',
+        sortable: false,
+        value: 'decode',
       },
       {
         text: 'Value',
