@@ -87,33 +87,49 @@
           :items-per-page="-1"
         >
           <template v-slot:[`item.key`]="{ item }">
-            <v-chip
+            <v-card
               :color="newParamColor(item)"
+              class="text-center ma-1"
               small
               dark
               @click="copyTextToClipBoard(item.key)"
+              width="80"
             >
               <strong>
                 {{ item.key }}
               </strong>
-            </v-chip>
+            </v-card>
           </template>
           <template v-slot:[`item.decode`]="{ item }">
-            <div
+            <v-card
+              elevation="0"
+              class="ma-1 pa-1"
               style="cursor: pointer;"
               @click="copyTextToClipBoard(decodeValueInTable(item))"
+              width="260"
             >
-              {{ decodeValueInTable(item) }}
-            </div>
+              <div v-if="!isJsonString(decodeValueInTable(item))">
+                {{ decodeValueInTable(item) }}
+              </div>
+              <div v-if="isJsonString(decodeValueInTable(item))">
+                <vue-json-pretty
+                  :data="stringParseToObject(item)"
+                >
+                </vue-json-pretty>
+              </div>
+            </v-card>
           </template>
           <template v-slot:[`item.value`]="{ item }">
-            <div
+            <v-card
               v-if="!editBool"
+              class="pa-1 ma-1"
+              elevation="0"
               @click="copyTextToClipBoard(item.value)"
-              style="overflow:auto;white-space: nowrap;cursor: pointer;"
+              style="cursor: pointer;"
+              width="270"
             >
               {{ item.value }}
-            </div>
+            </v-card>
             <v-text-field
               v-if="editBool"
               v-model="item.value"
@@ -123,9 +139,9 @@
               single-line
               hide-details="true"
               prepend-icon="mdi-content-paste"
+              class="ma-1"
               @click:prepend="copyTextToClipBoard(item.value)"
               :hint="item.value"
-              style="width:90%"
             ></v-text-field>
           </template>
           <template v-slot:[`item.control`]="{ item }">
@@ -141,9 +157,13 @@
 </template>
 
 <script>
+import VueJsonPretty from 'vue-json-pretty';
+import 'vue-json-pretty/lib/styles.css';
+
 export default {
   name: 'ParamsInfo',
   components: {
+    VueJsonPretty,
   },
   props: {
     pageInfo: {
@@ -160,6 +180,26 @@ export default {
     this.makeParams(this.pageInfo.search);
   },
   methods: {
+    isJsonString(str) {
+      try {
+        if (str === undefined || str === '') return false;
+        const json = JSON.parse(str);
+        return (typeof json === 'object');
+      } catch (e) {
+        return false;
+      }
+    },
+    stringParseToObject(item) {
+      try {
+        const value = decodeURIComponent(item.value);
+        if (value === item.value) {
+          return {};
+        }
+        return JSON.parse(value);
+      } catch {
+        return {};
+      }
+    },
     newParamColor(item) {
       if (item.isNew) {
         return 'error';
@@ -209,20 +249,22 @@ export default {
     },
 
     copyTextToClipBoard(copyText) {
-      if (navigator.clipboard) {
-            navigator.clipboard.writeText(copyText).then(() => {
-                this.clipBoardResult.text = 'copy success!';
-                this.clipBoardResult.style.color = 'green';
-            });
-        } else {
-            this.clipBoardResult.text = 'copy fail!';
-            this.clipBoardResult.style.color = 'red';
-        }
+      if (copyText !== undefined && copyText !== '') {
+        if (navigator.clipboard) {
+              navigator.clipboard.writeText(copyText).then(() => {
+                  this.clipBoardResult.text = 'copy success!';
+                  this.clipBoardResult.style.color = 'green';
+              });
+          } else {
+              this.clipBoardResult.text = 'copy fail!';
+              this.clipBoardResult.style.color = 'red';
+          }
 
-        setTimeout(() => {
-            this.clipBoardResult.text = '';
-            this.clipBoardResult.style.color = 'grey';
-        }, 2000);
+          setTimeout(() => {
+              this.clipBoardResult.text = '';
+              this.clipBoardResult.style.color = 'grey';
+          }, 2000);
+      }
     },
 
     deleteItemInList(item) {
