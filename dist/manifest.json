@@ -1,7 +1,7 @@
 {
     "name": "UrlToolkit",
     "description": "Made by Park Jeong Hyun (rootjh937dev@gmail.com)",
-    "version": "0.0.4",
+    "version": "0.1.0",
     "manifest_version": 3,
     "action": {
         "default_popup": "index.html"
@@ -12,5 +12,5 @@
     "icons": {
         "48": "main_icon48.png",
         "128": "main_icon128.png"
-    }
+}
 }
