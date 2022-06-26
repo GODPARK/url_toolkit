@@ -11,71 +11,10 @@
           <v-toolbar-title style="font-size:1rem;">
             Parameters.
           </v-toolbar-title>
-          <v-switch
-            class="mt-5 ml-3"
-            v-model="editBool"
-            inset
-            prepend-icon="mdi-pencil"
-          ></v-switch>
-          <div :style="clipBoardResult.style">
+          <div class="ml-4" :style="clipBoardResult.style">
             {{ clipBoardResult.text }}
           </div>
-          <v-spacer />
-          <v-tooltip bottom>
-            <template v-slot:activator="{ on, attrs }">
-              <v-btn
-                color="success"
-                small
-                @click="redirectAction()"
-                v-bind="attrs"
-                v-on="on"
-              >
-                GO
-              </v-btn>
-            </template>
-            <span>new tab or browser open</span>
-          </v-tooltip>
         </v-toolbar>
-        <v-card
-          v-if="editBool"
-          class="ma-4"
-          elevation="0"
-          outlined
-          color="grey lighten-3"
-        >
-          <div class="ml-3 mt-1" :style="newParamResult.style">
-            {{ newParamResult.text }}
-          </div>
-          <v-container>
-            <v-row>
-              <v-col cols="4">
-                <v-text-field
-                  v-model="newParamKey"
-                  label="Key"
-                  dense
-                  outlined
-                  single-line
-                  hide-details="true"
-                >
-                </v-text-field>
-              </v-col>
-              <v-col>
-                <v-text-field
-                  v-model="newParamValue"
-                  label="Value"
-                  dense
-                  outlined
-                  single-line
-                  hide-details="true"
-                >
-                </v-text-field>
-              </v-col>
-            </v-row>
-          </v-container>
-          <v-card-actions>
-            <v-btn block small outlined @click="newParamAdd()"> ADD </v-btn>
-          </v-card-actions>
-        </v-card>
         <v-data-table
           dense
           :headers="paramsHeader"
@@ -87,53 +26,47 @@
           :items-per-page="-1"
         >
           <template v-slot:[`item.key`]="{ item }">
-            <v-chip
-              :color="newParamColor(item)"
+            <v-card
+              class="text-center ma-1"
               small
               dark
               @click="copyTextToClipBoard(item.key)"
+              width="80"
             >
               <strong>
                 {{ item.key }}
               </strong>
-            </v-chip>
+            </v-card>
           </template>
           <template v-slot:[`item.decode`]="{ item }">
-            <div
-              style="cursor: pointer;"
+            <v-card
+              elevation="0"
+              class="ma-1 pa-1"
+              style="cursor: pointer;overflow: scroll;"
               @click="copyTextToClipBoard(decodeValueInTable(item))"
+              width="280"
             >
-              {{ decodeValueInTable(item) }}
-            </div>
+              <div v-if="!isJsonString(decodeValueInTable(item))">
+                {{ decodeValueInTable(item) }}
+              </div>
+              <div v-if="isJsonString(decodeValueInTable(item))">
+                <vue-json-pretty
+                  :data="stringParseToObject(item)"
+                >
+                </vue-json-pretty>
+              </div>
+            </v-card>
           </template>
           <template v-slot:[`item.value`]="{ item }">
-            <div
-              v-if="!editBool"
+            <v-card
+              class="pa-1 ma-1"
+              elevation="0"
               @click="copyTextToClipBoard(item.value)"
-              style="overflow:auto;white-space: nowrap;cursor: pointer;"
+              style="cursor: pointer;"
+              width="260"
             >
               {{ item.value }}
-            </div>
-            <v-text-field
-              v-if="editBool"
-              v-model="item.value"
-              label="value"
-              dense
-              outlined
-              single-line
-              hide-details="true"
-              prepend-icon="mdi-content-paste"
-              @click:prepend="copyTextToClipBoard(item.value)"
-              :hint="item.value"
-              style="width:90%"
-            ></v-text-field>
-          </template>
-          <template v-slot:[`item.control`]="{ item }">
-            <v-btn x-small text v-if="editBool" @click="deleteItemInList(item)">
-              <v-icon>
-                mdi-delete-outline
-              </v-icon>
-            </v-btn>
+            </v-card>
           </template>
         </v-data-table>
       </v-card>
@@ -141,9 +74,13 @@
 </template>
 
 <script>
+import VueJsonPretty from 'vue-json-pretty';
+import 'vue-json-pretty/lib/styles.css';
+
 export default {
   name: 'ParamsInfo',
   components: {
+    VueJsonPretty,
   },
   props: {
     pageInfo: {
@@ -160,11 +97,25 @@ export default {
     this.makeParams(this.pageInfo.search);
   },
   methods: {
-    newParamColor(item) {
-      if (item.isNew) {
-        return 'error';
+    isJsonString(str) {
+      try {
+        if (str === undefined || str === '') return false;
+        const json = JSON.parse(str);
+        return (typeof json === 'object');
+      } catch (e) {
+        return false;
       }
-      return 'secondary';
+    },
+    stringParseToObject(item) {
+      try {
+        const value = decodeURIComponent(item.value);
+        if (value === item.value) {
+          return {};
+        }
+        return JSON.parse(value);
+      } catch {
+        return {};
+      }
     },
     makeParams(rawParams) {
       if (rawParams !== '') {
@@ -178,8 +129,6 @@ export default {
                 {
                   key: paramKeyValue[0],
                   value: paramKeyValue[1],
-                  isEdit: false,
-                  isNew: false,
                 },
               );
           } else if (paramKeyValue.length === 1) {
@@ -187,8 +136,6 @@ export default {
                 {
                   key: paramKeyValue[0],
                   value: '',
-                  isEdit: false,
-                  isNew: false,
                 },
               );
           }
@@ -200,7 +147,7 @@ export default {
       try {
         const value = decodeURIComponent(item.value);
         if (value === item.value) {
-          return '';
+          return value;
         }
         return value;
       } catch {
@@ -209,102 +156,25 @@ export default {
     },
 
     copyTextToClipBoard(copyText) {
-      if (navigator.clipboard) {
-            navigator.clipboard.writeText(copyText).then(() => {
-                this.clipBoardResult.text = 'copy success!';
-                this.clipBoardResult.style.color = 'green';
-            });
-        } else {
-            this.clipBoardResult.text = 'copy fail!';
-            this.clipBoardResult.style.color = 'red';
-        }
-
-        setTimeout(() => {
-            this.clipBoardResult.text = '';
-            this.clipBoardResult.style.color = 'grey';
-        }, 2000);
-    },
-
-    deleteItemInList(item) {
-      const filteredList = this.paramsList.filter((element) => element.key !== item.key);
-      this.paramsList = filteredList;
-    },
-
-    newParamAdd() {
-      if (this.newParamKey !== undefined && this.newParamKey !== null && this.newParamKey !== '') {
-        const addValue = {
-          key: '',
-          value: '',
-          isEdit: false,
-          isNew: true,
-        };
-        addValue.key = this.newParamKey;
-        if (this.newParamValue !== undefined && this.newParamValue !== null) {
-          addValue.value = this.newParamValue;
-        }
-        let isAdd = true;
-        this.paramsList.forEach((element) => {
-          if (element.key === addValue.key) {
-            isAdd = false;
+      if (copyText !== undefined && copyText !== '') {
+        if (navigator.clipboard) {
+              navigator.clipboard.writeText(copyText).then(() => {
+                  this.clipBoardResult.text = 'copy success!';
+                  this.clipBoardResult.style.color = 'green';
+              });
+          } else {
+              this.clipBoardResult.text = 'copy fail!';
+              this.clipBoardResult.style.color = 'red';
           }
-        });
-        if (isAdd) {
-          this.paramsList.push(addValue);
-          this.newParamKey = '';
-          this.newParamValue = '';
-          this.newParamResult.text = 'new parameters add success';
-          this.newParamResult.style.color = 'green';
-        } else {
-          this.newParamResult.text = 'key is duplicated';
-          this.newParamResult.style.color = 'red';
-        }
-        setTimeout(() => {
-            this.newParamResult.text = '';
-            this.newParamResult.style.color = 'gray';
-        }, 2500);
-      }
-    },
 
-    makeRedirectUrl() {
-      let baseUrl = this.pageInfo.origin + this.pageInfo.pathname;
-      if (this.paramsList.length === 0) {
-        return baseUrl;
-      }
-      baseUrl = `${baseUrl}?`;
-      let index = 0;
-      this.paramsList.forEach((element) => {
-        baseUrl = `${baseUrl}${element.key}=${element.value}`;
-
-        if (index + 1 < this.paramsList.length) {
-          baseUrl += '&';
-        }
-        index += 1;
-      });
-      return baseUrl;
-    },
-
-    async redirectAction() {
-      const url = this.makeRedirectUrl();
-      if (this.testBool) {
-        window.open(url, '_blank');
-      } else {
-        /* eslint-disable */
-        await chrome.tabs.create({
-          url: url
-        });
+          setTimeout(() => {
+              this.clipBoardResult.text = '';
+              this.clipBoardResult.style.color = 'grey';
+          }, 2000);
       }
     },
   },
   data: () => ({
-    editBool: false,
-    newParamKey: '',
-    newParamValue: '',
-    newParamResult: {
-      text: '',
-      style: {
-        color: 'green',
-      },
-    },
     clipBoardResult: {
       text: '',
       style: {
@@ -330,12 +200,6 @@ export default {
         align: 'left',
         sortable: false,
         value: 'value',
-      },
-      {
-        text: 'Control',
-        align: 'left',
-        sortable: false,
-        value: 'control',
       },
     ],
   }),
