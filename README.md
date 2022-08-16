@@ -1,3 +1,6 @@
+![GitHub](https://img.shields.io/github/license/GODPARK/url_toolkit)
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/GODPARk/url_toolkit)
+
 # UrlToolkit
 * [release note](https://github.com/GODPARK/url_toolkit/releases)
 * [issue report](https://github.com/GODPARK/url_toolkit/issues)
